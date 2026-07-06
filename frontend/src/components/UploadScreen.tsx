@@ -72,18 +72,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   button: {
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   label: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     cursor: 'pointer',
   },
   buttonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   input: {
     display: 'none',
