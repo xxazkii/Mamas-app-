@@ -76,14 +76,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   label: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
     cursor: 'pointer',
   },
   buttonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 12,
+    fontSize: 16,
   },
   input: {
     display: 'none',
