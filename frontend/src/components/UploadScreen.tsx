@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 12,
+    fontSize: 16,
   },
   input: {
     display: 'none',
