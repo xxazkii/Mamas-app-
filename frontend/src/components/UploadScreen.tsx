@@ -32,7 +32,7 @@ export function UploadScreen({ onUpload, isDark }: UploadScreenProps) {
 
         <Pressable style={[styles.button, { backgroundColor: accent }]} onPress={() => {}}>
           <label style={styles.label}>
-            <Text style={styles.buttonText}>Browse Files</Text>
+            <span style={styles.buttonText}>Browse Files</span>
             <input type="file" accept=".xlsx,.xls" onChange={handleFileChange} style={styles.input} />
           </label>
         </Pressable>
