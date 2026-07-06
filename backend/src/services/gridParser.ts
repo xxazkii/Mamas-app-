@@ -16,12 +16,36 @@ function isDayName(cell: unknown): boolean {
   return DAY_NAMES.includes(normalizeValue(cell).toLowerCase());
 }
 
-function findDayNamesRow(rows: unknown[][]): number | null {
-  for (let i = 0; i < Math.min(rows.length, 15); i++) {
-    const matches = rows[i].filter(isDayName).length;
-    if (matches >= 5) return i;
+function findDayNamesRow(rows: unknown[][]): { rowIndex: number; columns: number[] } | null {
+  for (let i = 0; i < Math.min(rows.length, 25); i++) {
+    const columns: number[] = [];
+    rows[i].forEach((cell, idx) => {
+      if (isDayName(cell)) columns.push(idx);
+    });
+    if (columns.length >= 5) return { rowIndex: i, columns };
   }
   return null;
+}
+
+function parseDateFromCell(cell: unknown): string | null {
+  const text = normalizeValue(cell);
+  if (!text) return null;
+
+  // Already normalized to YYYY-MM-DD by Excel serial number handling
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) return text;
+
+  // Try to parse other date formats
+  const date = new Date(text);
+  if (!isNaN(date.getTime())) {
+    return date.toISOString().split('T')[0];
+  }
+  return null;
+}
+
+function isWeekHeaderRow(row: unknown[], dayColumns: number[]): boolean {
+  const dateCount = dayColumns.filter((col) => parseDateFromCell(row[col]) !== null).length;
+  return dateCount >= dayColumns.length / 2;
 }
 
 function findMonthYear(rows: unknown[][], fallbackYear: number): { year: number; month: number } | null {
@@ -40,51 +64,6 @@ function findMonthYear(rows: unknown[][], fallbackYear: number): { year: number;
   return { year: fallbackYear, month: new Date().getMonth() + 1 };
 }
 
-function parseDayNumber(cell: unknown): number | null {
-  const text = normalizeValue(cell);
-  const match = text.match(/^\d{1,2}$/);
-  return match ? parseInt(match[0], 10) : null;
-}
-
-function isWeekHeaderRow(row: unknown[]): boolean {
-  const numbers = row.filter((cell) => parseDayNumber(cell) !== null).length;
-  return numbers >= 5;
-}
-
-function buildWeekDates(row: unknown[], baseYear: number, baseMonth: number): (Date | null)[] {
-  const days: (number | null)[] = row.map(parseDayNumber);
-  let currentMonth = baseMonth;
-  let currentYear = baseYear;
-
-  // If the first numbered day is high (>20), the week starts in the previous month
-  const firstDay = days.find((d) => d !== null);
-  if (firstDay && firstDay > 20) {
-    currentMonth--;
-    if (currentMonth < 1) {
-      currentMonth = 12;
-      currentYear--;
-    }
-  }
-
-  let prevDay: number | null = firstDay ?? null;
-
-  return days.map((day) => {
-    if (day === null) return null;
-
-    if (prevDay !== null && day < prevDay && day <= 5) {
-      // Month rolled over within the week
-      currentMonth++;
-      if (currentMonth > 12) {
-        currentMonth = 1;
-        currentYear++;
-      }
-    }
-
-    prevDay = day;
-    return new Date(Date.UTC(currentYear, currentMonth - 1, day));
-  });
-}
-
 export function parseCalendarGrid(
   sheet: { name: string; rows: unknown[][] },
   fallbackYear: number
@@ -92,8 +71,8 @@ export function parseCalendarGrid(
   const events: ParsedEvent[] = [];
   const warnings: string[] = [];
 
-  const dayNamesRow = findDayNamesRow(sheet.rows);
-  if (dayNamesRow === null) return { events, warnings };
+  const dayNames = findDayNamesRow(sheet.rows);
+  if (dayNames === null) return { events, warnings };
 
   const monthYear = findMonthYear(sheet.rows, fallbackYear);
   if (!monthYear) {
@@ -101,25 +80,28 @@ export function parseCalendarGrid(
     return { events, warnings };
   }
 
-  let currentWeekDates: (Date | null)[] = [];
+  const dayColumns = dayNames.columns;
+  let currentWeekDates: (string | null)[] = [];
 
-  for (let i = dayNamesRow + 1; i < sheet.rows.length; i++) {
+  for (let i = dayNames.rowIndex + 1; i < sheet.rows.length; i++) {
     const row = sheet.rows[i];
     if (!row || row.length === 0) continue;
 
-    if (isWeekHeaderRow(row)) {
-      currentWeekDates = buildWeekDates(row, monthYear.year, monthYear.month);
+    if (isWeekHeaderRow(row, dayColumns)) {
+      currentWeekDates = dayColumns.map((col) => parseDateFromCell(row[col]));
       continue;
     }
 
-    for (let col = 0; col < row.length; col++) {
-      const text = normalizeValue(row[col]);
+    for (const col of dayColumns) {
+      const text = normalizeValue(row[col]).replace(/\s+/g, ' ');
       if (!text || /^\d{1,2}$/.test(text)) continue;
+      // Skip labels that are not event titles
+      if (isDayName(text)) continue;
+      if (text.length < 2) continue;
 
-      const date = currentWeekDates[col];
-      if (!date) continue;
+      const dateStr = currentWeekDates[dayColumns.indexOf(col)];
+      if (!dateStr) continue;
 
-      const dateStr = date.toISOString().split('T')[0];
       events.push({
         id: uuid(),
         title: text,
