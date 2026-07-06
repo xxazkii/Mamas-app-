@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text, SafeAreaView, useColorScheme } from 'react-native';
+import { StyleSheet, View, Text, SafeAreaView, useColorScheme, TouchableOpacity } from 'react-native';
 import { UploadScreen } from './src/components/UploadScreen';
 import { ProgressScreen } from './src/components/ProgressScreen';
 import { PreviewScreen } from './src/components/PreviewScreen';
@@ -45,6 +45,13 @@ export default function App() {
     }
   };
 
+  const handleHome = () => {
+    setScreen('upload');
+    setResult(null);
+    setEvents([]);
+    setError(null);
+  };
+
   const backgroundColor = isDark ? '#000000' : '#F2F2F7';
   const textColor = isDark ? '#FFFFFF' : '#000000';
 
@@ -52,6 +59,11 @@ export default function App() {
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <View style={styles.header}>
+        {screen !== 'upload' && (
+          <TouchableOpacity onPress={handleHome} style={styles.homeButton}>
+            <Text style={[styles.homeButtonText, { color: textColor }]}>Home</Text>
+          </TouchableOpacity>
+        )}
         <Text style={[styles.title, { color: textColor }]}>Excel Calendar</Text>
       </View>
 
@@ -92,10 +104,26 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
+  },
+  homeButton: {
+    position: 'absolute',
+    left: 20,
+    top: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  homeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   errorBox: {
     marginHorizontal: 20,
